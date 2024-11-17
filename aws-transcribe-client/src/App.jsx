@@ -10,7 +10,7 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get('http://localhost:3000/get-pdfs');
+      const response = await axios.get('https://lecture-transcription.onrender.com/get-pdfs');
       console.log(response);
       setPdfUrls(response.data.pdfUrls);
     } catch (err) {
