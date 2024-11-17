@@ -110,7 +110,9 @@ app.get('/get-pdfs', async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch PDF list', details: err.message });
     }
   });
+
   
+
 
 // Function to process new files automatically when they are added to S3
 const processNewFilesAutomatically = async (bucketName) => {
