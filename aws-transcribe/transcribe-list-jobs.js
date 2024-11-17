@@ -3,8 +3,7 @@ const express = require('express');
 const AWS = require('aws-sdk');
 const PDFDocument = require('pdfkit');
 const path = require('path');
-
-
+require('dotenv').config();
 // Enable CORS for all routes
 
 // Configure AWS SDK
@@ -96,7 +95,6 @@ app.get('/get-pdfs', async (req, res) => {
     try {
       // Trigger processing of new files
       await processNewFilesAutomatically('optranscriptionbucket');
-  
       const params = {
         Bucket: 'pdfbucketfortranscribe',
       };
