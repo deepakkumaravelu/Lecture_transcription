@@ -3,7 +3,7 @@ const express = require("express");
 const AWS = require("aws-sdk");
 const PDFDocument = require("pdfkit");
 const path = require("path");
-const fs = require('fs');
+const fs = require("fs");
 require("dotenv").config();
 // Enable CORS for all routes
 
