@@ -84,7 +84,7 @@ const processJsonAndUploadPDF = async (bucketName, fileName) => {
         }
       });
     });
-    const tamilFontPath = path.join(__dirname, "fonts", "NotoSansTamil.ttf");
+    const tamilFontPath = path.join(__dirname, "fonts", "NotoSansTamil-Regular.ttf");
 
     if (fs.existsSync(tamilFontPath)) {
       pdfDoc.font(tamilFontPath); // Set font to Tamil-compatible font
