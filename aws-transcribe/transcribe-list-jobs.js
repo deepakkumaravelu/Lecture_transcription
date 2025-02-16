@@ -1,14 +1,14 @@
-const cors = require('cors');
-const express = require('express');
-const AWS = require('aws-sdk');
-const PDFDocument = require('pdfkit');
-const path = require('path');
-require('dotenv').config();
+const cors = require("cors");
+const express = require("express");
+const AWS = require("aws-sdk");
+const PDFDocument = require("pdfkit");
+const path = require("path");
+require("dotenv").config();
 // Enable CORS for all routes
 
 // Configure AWS SDK
 AWS.config.update({
-  region: 'ap-southeast-2',
+  region: "ap-southeast-2",
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
@@ -22,14 +22,14 @@ const checkIfPdfExists = async (bucketName, fileName) => {
   try {
     const params = {
       Bucket: bucketName,
-      Key: `${path.basename(fileName, '.json')}.pdf`,
+      Key: `${path.basename(fileName, ".json")}.pdf`,
     };
 
     // Try to get the metadata of the file
     await s3.headObject(params).promise();
     return true; // If file exists, return true
   } catch (err) {
-    if (err.code === 'NotFound') {
+    if (err.code === "NotFound") {
       return false; // If file doesn't exist, return false
     }
     throw err; // For other errors, throw them
@@ -39,8 +39,11 @@ const checkIfPdfExists = async (bucketName, fileName) => {
 // Function to download JSON file, convert it to PDF, and upload to S3
 const processJsonAndUploadPDF = async (bucketName, fileName) => {
   try {
-    const pdfExists = await checkIfPdfExists('pdfbucketfortranscribe', fileName);
-    
+    const pdfExists = await checkIfPdfExists(
+      "pdfbucketfortranscribe",
+      fileName
+    );
+
     if (pdfExists) {
       console.log(`PDF for ${fileName} already exists. Skipping upload.`);
       return; // Skip uploading if the PDF already exists
@@ -56,63 +59,69 @@ const processJsonAndUploadPDF = async (bucketName, fileName) => {
     const transcriptText = jsonData.results.transcripts[0].transcript;
 
     if (!transcriptText) {
-      console.error('No transcript found in the JSON file.');
+      console.error("No transcript found in the JSON file.");
       return;
     }
 
     const pdfDoc = new PDFDocument();
     const pdfBuffer = [];
 
-    pdfDoc.on('data', chunk => pdfBuffer.push(chunk)); // Collect PDF data in memory
-    pdfDoc.on('end', () => {
+    pdfDoc.on("data", (chunk) => pdfBuffer.push(chunk)); // Collect PDF data in memory
+    pdfDoc.on("end", () => {
       const pdfData = Buffer.concat(pdfBuffer);
       const uploadParams = {
-        Bucket: 'pdfbucketfortranscribe',
-        Key: `${path.basename(fileName, '.json')}.pdf`,
+        Bucket: "pdfbucketfortranscribe",
+        Key: `${path.basename(fileName, ".json")}.pdf`,
         Body: pdfData,
-        ContentType: 'application/pdf',
+        ContentType: "application/pdf",
       };
 
       s3.upload(uploadParams, (err, data) => {
         if (err) {
-          console.error('Error uploading PDF to S3:', err);
+          console.error("Error uploading PDF to S3:", err);
         } else {
           console.log(`PDF uploaded successfully: ${data.Location}`);
         }
       });
     });
+    const tamilFontPath = path.join(__dirname, "fonts", "NotoSansTamil.ttf");
 
-    pdfDoc.fontSize(12).text(transcriptText, { width: 410, align: 'left' });
+    if (fs.existsSync(tamilFontPath)) {
+      pdfDoc.font(tamilFontPath); // Set font to Tamil-compatible font
+    } else {
+      console.error(
+        "Tamil font not found! Ensure 'NotoSansTamil-Regular.ttf' is in the 'fonts' folder."
+      );
+    }
+    pdfDoc.fontSize(12).text(transcriptText, { width: 410, align: "left" });
     pdfDoc.end(); // End the PDF creation process
-
   } catch (err) {
-    console.error('Error processing JSON file and uploading PDF:', err);
+    console.error("Error processing JSON file and uploading PDF:", err);
   }
 };
 
 // Endpoint to fetch all PDFs in the S3 bucket
-app.get('/get-pdfs', async (req, res) => {
-    try {
-      // Trigger processing of new files
-      await processNewFilesAutomatically('optranscriptionbucket');
-      const params = {
-        Bucket: 'pdfbucketfortranscribe',
-      };
-  
-      const data = await s3.listObjectsV2(params).promise();
-      const pdfFiles = data.Contents.filter(item => item.Key.endsWith('.pdf'));
-      const pdfUrls = pdfFiles.map(file => {
-        return `https://${params.Bucket}.s3.amazonaws.com/${file.Key}`;
-      });
-  
-      res.json({ pdfUrls });
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to fetch PDF list', details: err.message });
-    }
-  });
+app.get("/get-pdfs", async (req, res) => {
+  try {
+    // Trigger processing of new files
+    await processNewFilesAutomatically("optranscriptionbucket");
+    const params = {
+      Bucket: "pdfbucketfortranscribe",
+    };
 
-  
+    const data = await s3.listObjectsV2(params).promise();
+    const pdfFiles = data.Contents.filter((item) => item.Key.endsWith(".pdf"));
+    const pdfUrls = pdfFiles.map((file) => {
+      return `https://${params.Bucket}.s3.amazonaws.com/${file.Key}`;
+    });
 
+    res.json({ pdfUrls });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch PDF list", details: err.message });
+  }
+});
 
 // Function to process new files automatically when they are added to S3
 const processNewFilesAutomatically = async (bucketName) => {
@@ -122,18 +131,18 @@ const processNewFilesAutomatically = async (bucketName) => {
     };
 
     const data = await s3.listObjectsV2(params).promise();
-    const currentFiles = data.Contents.map(item => item.Key);
-    const jsonFiles = currentFiles.filter(file => file.endsWith('.json'));
+    const currentFiles = data.Contents.map((item) => item.Key);
+    const jsonFiles = currentFiles.filter((file) => file.endsWith(".json"));
 
     if (jsonFiles.length > 0) {
-      jsonFiles.forEach(file => {
+      jsonFiles.forEach((file) => {
         processJsonAndUploadPDF(bucketName, file);
       });
     } else {
-      console.log('No new JSON files to process.');
+      console.log("No new JSON files to process.");
     }
   } catch (err) {
-    console.error('Error checking for new files:', err);
+    console.error("Error checking for new files:", err);
   }
 };
 
